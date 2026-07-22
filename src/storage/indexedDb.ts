@@ -1,5 +1,13 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import type { Dataroom, FileItem, Folder } from "@/types";
+import type {
+  ActivityEvent,
+  ChecklistItem,
+  Dataroom,
+  FileItem,
+  Folder,
+  ShareLink,
+  Tag,
+} from "@/types";
 
 export interface DataroomDB extends DBSchema {
   datarooms: {
@@ -20,10 +28,30 @@ export interface DataroomDB extends DBSchema {
     key: string;
     value: Blob;
   };
+  tags: {
+    key: string;
+    value: Tag;
+    indexes: { "by-dataroom": string };
+  };
+  shareLinks: {
+    key: string;
+    value: ShareLink;
+    indexes: { "by-dataroom": string; "by-token": string };
+  };
+  activity: {
+    key: string;
+    value: ActivityEvent;
+    indexes: { "by-dataroom": string };
+  };
+  checklist: {
+    key: string;
+    value: ChecklistItem;
+    indexes: { "by-dataroom": string };
+  };
 }
 
 const DB_NAME = "dataroom-mvp";
-const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<DataroomDB>> | null = null;
 
@@ -35,16 +63,46 @@ export class StorageError extends Error {
   }
 }
 
+/**
+ * Creates every store the current schema needs. Written so each version step is
+ * additive: a v1 database keeps its rows and only gains the new stores, and a
+ * fresh database runs both steps in one upgrade transaction.
+ */
+export function migrate(db: IDBPDatabase<DataroomDB>, oldVersion: number) {
+  if (oldVersion < 1) {
+    db.createObjectStore("datarooms", { keyPath: "id" });
+    db.createObjectStore("folders", { keyPath: "id" }).createIndex(
+      "by-dataroom",
+      "dataroomId",
+    );
+    db.createObjectStore("files", { keyPath: "id" }).createIndex(
+      "by-dataroom",
+      "dataroomId",
+    );
+    db.createObjectStore("blobs");
+  }
+  if (oldVersion < 2) {
+    db.createObjectStore("tags", { keyPath: "id" }).createIndex(
+      "by-dataroom",
+      "dataroomId",
+    );
+    const shares = db.createObjectStore("shareLinks", { keyPath: "id" });
+    shares.createIndex("by-dataroom", "dataroomId");
+    shares.createIndex("by-token", "token", { unique: true });
+    db.createObjectStore("activity", { keyPath: "id" }).createIndex(
+      "by-dataroom",
+      "dataroomId",
+    );
+    db.createObjectStore("checklist", { keyPath: "id" }).createIndex(
+      "by-dataroom",
+      "dataroomId",
+    );
+  }
+}
+
 export function getDb(): Promise<IDBPDatabase<DataroomDB>> {
   dbPromise ??= openDB<DataroomDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      db.createObjectStore("datarooms", { keyPath: "id" });
-      const folders = db.createObjectStore("folders", { keyPath: "id" });
-      folders.createIndex("by-dataroom", "dataroomId");
-      const files = db.createObjectStore("files", { keyPath: "id" });
-      files.createIndex("by-dataroom", "dataroomId");
-      db.createObjectStore("blobs");
-    },
+    upgrade: migrate,
     blocked() {
       console.warn("IndexedDB open is blocked by another tab");
     },
@@ -82,4 +140,20 @@ export async function destroyDatabase(): Promise<void> {
     request.onerror = () => reject(request.error);
     request.onblocked = () => resolve();
   });
+}
+
+/** Test seam: drops the memoized connection so a fresh `getDb()` reopens. */
+export function resetDbConnection() {
+  dbPromise = null;
+}
+
+/** Best-effort browser storage quota, used by the sidebar usage meter. */
+export async function estimateUsage(): Promise<{ used: number; quota: number } | null> {
+  if (!navigator.storage?.estimate) return null;
+  try {
+    const { usage = 0, quota = 0 } = await navigator.storage.estimate();
+    return quota > 0 ? { used: usage, quota } : null;
+  } catch {
+    return null;
+  }
 }
