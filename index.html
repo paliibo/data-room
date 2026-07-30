@@ -2,13 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#6d5cf0" />
     <meta
       name="description"
-      content="Dataroom — a secure workspace for organizing and sharing due-diligence documents."
+      content="Vault — a virtual data room for due diligence: organize documents, share them behind expiring links, and see exactly who opened what."
     />
-    <title>Dataroom</title>
+    <meta property="og:title" content="Vault — Virtual Data Room" />
+    <meta
+      property="og:description"
+      content="Organize due-diligence documents, share them behind expiring passcode-protected links, and track every view."
+    />
+    <meta property="og:type" content="website" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>Vault — Virtual Data Room</title>
+
+    <!-- Resolve the theme before first paint so dark mode never flashes white. -->
     <script>
       try {
         var stored = JSON.parse(localStorage.getItem("dataroom-theme") || "null");
@@ -21,6 +38,7 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>Vault needs JavaScript enabled to open your local data rooms.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
