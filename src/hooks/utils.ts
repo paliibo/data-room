@@ -38,6 +38,18 @@ export function compareByName(a: Folder, b: Folder): number {
   });
 }
 
+/**
+ * Normalizes a keyboard event into a lookup key: "mod+k", "shift+n", "f2", "/".
+ * Meta and Control both map to `mod` so the same map works on every platform.
+ */
+export function shortcutKey(event: KeyboardEvent): string {
+  const parts: string[] = [];
+  if (event.metaKey || event.ctrlKey) parts.push("mod");
+  if (event.shiftKey && event.key.length > 1) parts.push("shift");
+  parts.push(event.key.toLowerCase());
+  return parts.join("+");
+}
+
 export function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return (
