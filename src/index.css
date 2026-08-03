@@ -60,6 +60,14 @@
   --accent-amber-soft: oklch(0.96 0.04 72);
   --accent-rose-soft: oklch(0.95 0.032 15);
 
+  /* Chart series. A separate set from the accents above: series colour is its
+     own job, and these three were picked to clear colour-vision separation
+     against this mode's surface rather than to match the room accents. */
+  --chart-1: #4d57dc;
+  --chart-2: #b3760a;
+  --chart-3: #00806b;
+  --chart-grid: oklch(0.9 0.006 262);
+
   --shadow-color: 264 30% 30%;
   --radius: 0.7rem;
   color-scheme: light;
@@ -114,6 +122,12 @@
   --accent-amber-soft: oklch(0.32 0.06 74);
   --accent-rose-soft: oklch(0.3 0.065 16);
 
+  /* Re-stepped for the dark surface, not flipped: same hues, own lightness. */
+  --chart-1: #7484f7;
+  --chart-2: #c78100;
+  --chart-3: #0da26b;
+  --chart-grid: oklch(1 0 0 / 9%);
+
   --shadow-color: 264 60% 3%;
   color-scheme: dark;
 }
@@ -147,6 +161,11 @@
   --color-brand-hover: var(--brand-hover);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-soft: var(--brand-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-grid: var(--chart-grid);
 
   --color-tint: var(--accent-solid, var(--brand));
   --color-tint-soft: var(--accent-soft, var(--brand-soft));
