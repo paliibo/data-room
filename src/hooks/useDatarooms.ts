@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useDataStore } from "@/store/dataStore";
 import type { Dataroom } from "@/types";
@@ -19,9 +19,10 @@ export function useDatarooms() {
     }
   }, []);
 
-  const datarooms: Dataroom[] = dataroomIds
-    .map((id) => dataroomsById[id])
-    .filter(Boolean);
+  const datarooms: Dataroom[] = useMemo(
+    () => dataroomIds.map((id) => dataroomsById[id]).filter(Boolean),
+    [dataroomIds, dataroomsById],
+  );
 
   return {
     status,
@@ -29,12 +30,18 @@ export function useDatarooms() {
     datarooms,
     createDataroom: useDataStore.getState().createDataroom,
     renameDataroom: useDataStore.getState().renameDataroom,
+    updateDataroom: useDataStore.getState().updateDataroom,
     deleteDataroom: useDataStore.getState().deleteDataroom,
+    reload: useDataStore.getState().loadDatarooms,
   };
 }
 
 export function useDataroom(dataroomId: string | undefined): Dataroom | undefined {
+  return useDataStore((s) => (dataroomId ? s.dataroomsById[dataroomId] : undefined));
+}
+
+export function useActiveDataroom(): Dataroom | null {
   return useDataStore((s) =>
-    dataroomId ? s.dataroomsById[dataroomId] : undefined,
+    s.activeDataroomId ? s.dataroomsById[s.activeDataroomId] ?? null : null,
   );
 }
