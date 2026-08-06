@@ -21,11 +21,12 @@ export function useFolderTree(): TreeNode[] {
       const childIds = childrenByParent[parentKey(parentId)]?.folderIds ?? [];
       const children = childIds
         .map((id) => foldersById[id])
-        .filter(Boolean)
+        .filter((folder) => folder && !folder.deletedAt)
         .sort(compareByName);
       for (const folder of children) {
-        const hasChildren =
-          (childrenByParent[folder.id]?.folderIds.length ?? 0) > 0;
+        const hasChildren = (childrenByParent[folder.id]?.folderIds ?? []).some(
+          (id) => foldersById[id] && !foldersById[id].deletedAt,
+        );
         const isExpanded = Boolean(expandedFolderIds[folder.id]);
         nodes.push({ folder, depth, hasChildren, isExpanded });
         if (hasChildren && isExpanded) visit(folder.id, depth + 1);

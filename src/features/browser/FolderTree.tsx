@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { FolderTree as FolderTreeIcon, HardDrive } from "lucide-react";
+import { FolderTree as FolderTreeIcon, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFolderTree } from "@/hooks/useFolderTree";
 import { useUiStore } from "@/store/uiStore";
@@ -7,7 +7,12 @@ import { getDragPayload, isItemDrag } from "@/lib/dnd";
 import { FolderNode } from "./FolderNode";
 import type { FolderTreeProps } from "@/features/browser/types";
 
-export function FolderTree({ activeFolderId, onNavigate, onMoveItem }: FolderTreeProps) {
+export function FolderTree({
+  activeFolderId,
+  isFolderScope,
+  onNavigate,
+  onMoveItem,
+}: FolderTreeProps) {
   const nodes = useFolderTree();
   const toggleFolderExpanded = useUiStore((s) => s.toggleFolderExpanded);
 
@@ -16,14 +21,17 @@ export function FolderTree({ activeFolderId, onNavigate, onMoveItem }: FolderTre
     [toggleFolderExpanded],
   );
 
+  const rootActive = isFolderScope && activeFolderId === null;
+
   return (
-    <nav aria-label="Folders" className="flex flex-col gap-0.5 px-2">
+    <nav aria-label="Folders" className="flex flex-col gap-0.5" role="tree">
       <div
-        role="button"
+        role="treeitem"
+        aria-selected={rootActive}
         tabIndex={0}
         className={cn(
-          "flex h-8 cursor-pointer select-none items-center gap-2 rounded-md px-2 text-sm transition-colors",
-          activeFolderId === null
+          "flex h-8 cursor-pointer select-none items-center gap-2.5 rounded-lg px-2.5 text-sm transition-colors",
+          rootActive
             ? "bg-accent font-medium text-accent-foreground"
             : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
         )}
@@ -45,28 +53,26 @@ export function FolderTree({ activeFolderId, onNavigate, onMoveItem }: FolderTre
           }
         }}
       >
-        <HardDrive className="h-4 w-4 shrink-0" aria-hidden />
-        All documents
+        <Home className="size-4 shrink-0" aria-hidden />
+        Dataroom root
       </div>
 
       {nodes.length === 0 ? (
-        <p className="flex items-center gap-2 px-2 py-3 text-xs text-muted-foreground">
-          <FolderTreeIcon className="h-3.5 w-3.5" aria-hidden />
+        <p className="flex items-center gap-2 px-2.5 py-2 text-xs text-muted-foreground">
+          <FolderTreeIcon className="size-3.5" aria-hidden />
           No folders yet
         </p>
       ) : (
-        <div role="tree" aria-label="Folder tree">
-          {nodes.map((node) => (
-            <FolderNode
-              key={node.folder.id}
-              node={node}
-              isActive={node.folder.id === activeFolderId}
-              onNavigate={onNavigate}
-              onToggle={handleToggle}
-              onDropItem={onMoveItem}
-            />
-          ))}
-        </div>
+        nodes.map((node) => (
+          <FolderNode
+            key={node.folder.id}
+            node={node}
+            isActive={isFolderScope && node.folder.id === activeFolderId}
+            onNavigate={onNavigate}
+            onToggle={handleToggle}
+            onDropItem={onMoveItem}
+          />
+        ))
       )}
     </nav>
   );
