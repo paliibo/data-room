@@ -1,12 +1,12 @@
 import { AnimatePresence } from "framer-motion";
-import { FolderOpen, SearchX, Upload } from "lucide-react";
+import { FolderOpen, SearchX, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useUiStore } from "@/store/uiStore";
 import { ItemCard } from "./ItemCard";
 import { ItemRow } from "./ItemRow";
-import { itemId } from "@/features/browser/utils";
+import { SCOPE_COPY, itemId } from "@/features/browser/utils";
 import type {
   BrowserItem,
   ContentViewProps,
@@ -16,9 +16,9 @@ import type {
 function LoadingSkeleton({ viewMode }: LoadingSkeletonProps) {
   if (viewMode === "list") {
     return (
-      <div className="space-y-2" aria-label="Loading contents" role="status">
-        {Array.from({ length: 6 }, (_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
+      <div className="space-y-1.5" aria-label="Loading contents" role="status">
+        {Array.from({ length: 7 }, (_, i) => (
+          <Skeleton key={i} className="h-10 w-full rounded-lg" />
         ))}
       </div>
     );
@@ -29,8 +29,8 @@ function LoadingSkeleton({ viewMode }: LoadingSkeletonProps) {
       aria-label="Loading contents"
       role="status"
     >
-      {Array.from({ length: 8 }, (_, i) => (
-        <Skeleton key={i} className="h-40 w-full rounded-xl" />
+      {Array.from({ length: 10 }, (_, i) => (
+        <Skeleton key={i} className="h-44 w-full rounded-xl" />
       ))}
     </div>
   );
@@ -40,12 +40,15 @@ export function ContentView({
   folders,
   files,
   status,
+  scope,
   searchQuery,
-  selectedId,
-  onSelect,
+  selectedIds,
   actions,
+  onSelect,
+  onToggleSelect,
   onUpload,
   onNewFolder,
+  onClearSearch,
 }: ContentViewProps) {
   const viewMode = useUiStore((s) => s.viewMode);
 
@@ -63,34 +66,57 @@ export function ContentView({
       return (
         <EmptyState
           icon={SearchX}
-          title={`No results for "${searchQuery.trim()}"`}
-          description="Try a different search term, or look in another folder."
+          title={`No matches for "${searchQuery.trim()}"`}
+          description="Try a different term, or search the whole dataroom from the command palette."
+          action={
+            <Button variant="outline" size="sm" onClick={onClearSearch}>
+              Clear filter
+            </Button>
+          }
         />
       );
     }
+    const copy = SCOPE_COPY[scope];
     return (
       <EmptyState
-        icon={FolderOpen}
-        title="This folder is empty"
-        description="Drag & drop PDF files anywhere on this page, or create a folder to organize documents."
+        icon={scope === "trash" ? Trash2 : FolderOpen}
+        title={copy.empty}
+        description={copy.description}
         action={
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onNewFolder}>
-              New folder
-            </Button>
-            <Button variant="brand" size="sm" onClick={onUpload}>
-              <Upload aria-hidden /> Upload PDFs
-            </Button>
-          </div>
+          scope === "folder" ? (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={onNewFolder}>
+                New folder
+              </Button>
+              <Button variant="brand" size="sm" onClick={onUpload}>
+                <Upload aria-hidden /> Upload PDFs
+              </Button>
+            </div>
+          ) : undefined
         }
       />
     );
   }
 
+  const selected = new Set(selectedIds);
+  const isSelecting = selectedIds.length > 1;
+
+  const shared = (item: BrowserItem) => ({
+    key: itemId(item),
+    item,
+    actions,
+    scope,
+    isSelected: selected.has(itemId(item)),
+    isSelecting,
+    onSelect,
+    onToggleSelect,
+  });
+
   if (viewMode === "list") {
     return (
-      <div role="list" aria-label="Folder contents">
-        <div className="hidden grid-cols-[minmax(0,1fr)_7rem_11rem_2.5rem] gap-2 border-b px-3 pb-2 text-xs font-medium text-muted-foreground sm:grid">
+      <div role="list" aria-label="Contents">
+        <div className="hidden grid-cols-[auto_minmax(0,1fr)_6rem_10rem_2.25rem] gap-2.5 border-b px-2.5 pb-2 text-xs font-medium text-muted-foreground sm:grid">
+          <span className="w-4" />
           <span>Name</span>
           <span className="text-right">Size</span>
           <span className="text-right">Modified</span>
@@ -99,13 +125,7 @@ export function ContentView({
         <div className="mt-1 space-y-0.5">
           <AnimatePresence initial={false}>
             {items.map((item) => (
-              <ItemRow
-                key={itemId(item)}
-                item={item}
-                actions={actions}
-                isSelected={selectedId === itemId(item)}
-                onSelect={onSelect}
-              />
+              <ItemRow {...shared(item)} />
             ))}
           </AnimatePresence>
         </div>
@@ -116,18 +136,12 @@ export function ContentView({
   return (
     <div
       role="list"
-      aria-label="Folder contents"
+      aria-label="Contents"
       className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
     >
       <AnimatePresence initial={false}>
         {items.map((item) => (
-          <ItemCard
-            key={itemId(item)}
-            item={item}
-            actions={actions}
-            isSelected={selectedId === itemId(item)}
-            onSelect={onSelect}
-          />
+          <ItemCard {...shared(item)} />
         ))}
       </AnimatePresence>
     </div>
