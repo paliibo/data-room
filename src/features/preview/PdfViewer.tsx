@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { FileRepository } from "@/storage/repositories/FileRepository";
-import { Button } from "@/components/ui/button";
 import type { PdfViewerProps, ViewerState } from "@/features/preview/types";
 
-export default function PdfViewer({ fileId, fileName }: PdfViewerProps) {
+/**
+ * The browser's own PDF renderer over a blob URL. Zero dependencies, lazily
+ * loaded, and it brings zoom, search and print for free — pdf.js would add
+ * ~400 kB for little gain here, and this component is the seam if that changes.
+ */
+export default function PdfViewer({ fileId, fileName, watermark }: PdfViewerProps) {
   const [state, setState] = useState<ViewerState>({ status: "loading" });
 
   useEffect(() => {
@@ -46,7 +50,7 @@ export default function PdfViewer({ fileId, fileName }: PdfViewerProps) {
   if (state.status === "loading") {
     return (
       <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        <Loader2 className="size-4 animate-spin" aria-hidden />
         Loading document…
       </div>
     );
@@ -55,26 +59,31 @@ export default function PdfViewer({ fileId, fileName }: PdfViewerProps) {
   if (state.status === "error") {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-        <AlertTriangle className="h-8 w-8 text-destructive" aria-hidden />
+        <AlertTriangle className="size-8 text-destructive" aria-hidden />
         <p className="text-sm text-muted-foreground">{state.message}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative h-full overflow-hidden rounded-lg border bg-muted">
       <iframe
         src={state.url}
         title={`Preview of ${fileName}`}
-        className="h-full w-full rounded-lg border bg-muted"
+        className="size-full"
       />
-      <div className="flex justify-end pt-3">
-        <Button asChild variant="outline" size="sm">
-          <a href={state.url} download={fileName}>
-            Download
-          </a>
-        </Button>
-      </div>
+      {watermark && (
+        // Non-interactive overlay: it marks the copy on screen without getting
+        // between the reader and the viewer's own controls.
+        <div
+          className="watermark pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden"
+          aria-hidden
+        >
+          <span className="-rotate-[24deg] select-none whitespace-nowrap text-4xl font-semibold uppercase tracking-[0.2em] text-brand/15">
+            {watermark}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
