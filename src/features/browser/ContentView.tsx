@@ -102,7 +102,6 @@ export function ContentView({
   const isSelecting = selectedIds.length > 1;
 
   const shared = (item: BrowserItem) => ({
-    key: itemId(item),
     item,
     actions,
     scope,
@@ -125,7 +124,7 @@ export function ContentView({
         <div className="mt-1 space-y-0.5">
           <AnimatePresence initial={false}>
             {items.map((item) => (
-              <ItemRow {...shared(item)} />
+              <ItemRow key={itemId(item)} {...shared(item)} />
             ))}
           </AnimatePresence>
         </div>
@@ -141,7 +140,7 @@ export function ContentView({
     >
       <AnimatePresence initial={false}>
         {items.map((item) => (
-          <ItemCard {...shared(item)} />
+          <ItemCard key={itemId(item)} {...shared(item)} />
         ))}
       </AnimatePresence>
     </div>
