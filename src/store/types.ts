@@ -39,6 +39,8 @@ export interface ActivityDraft {
   targetName: string;
   detail?: string;
   actor?: string;
+  /** Explicit timestamp. Only the demo seeder sets this; actions use now(). */
+  at?: string;
 }
 
 export interface ShareLinkDraft {
