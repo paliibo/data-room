@@ -31,10 +31,14 @@ export const createActivitySlice: StateCreator<DataState, [], [], ActivitySlice>
       targetName: d.targetName,
       detail: d.detail ?? "",
       // Nudge each event so a batched upload keeps a stable, readable order.
-      at: new Date(Date.parse(timestamp) + index).toISOString(),
+      at: d.at ?? new Date(Date.parse(timestamp) + index).toISOString(),
     }));
 
-    set((s) => ({ activity: [...events].reverse().concat(s.activity) }));
+    // The feed's invariant is newest-first. Merging by timestamp rather than
+    // prepending keeps that true even for backdated batches.
+    set((s) => ({
+      activity: [...events, ...s.activity].sort((a, b) => b.at.localeCompare(a.at)),
+    }));
     await ActivityRepository.append(events);
     await ActivityRepository.prune(dataroomId);
   },
