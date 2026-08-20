@@ -2,6 +2,8 @@ import { useDataStore } from "@/store/dataStore";
 import { STARTER_REQUESTS } from "@/features/checklist/types";
 import { DEMO_DATASET, type DemoFolder } from "@/features/demo/dataset";
 import { createSamplePdf } from "@/features/demo/pdf";
+import { seedDemoHistory } from "@/features/demo/history";
+import { seedDemoFulfillment } from "@/features/demo/fulfillment";
 import type { Dataroom } from "@/types";
 
 /**
@@ -55,6 +57,7 @@ export async function seedDemoDataroom(): Promise<Dataroom> {
   await uploadInto(null, DEMO_DATASET.rootFiles);
   await build(DEMO_DATASET.tree, null);
   await useDataStore.getState().seedChecklist(STARTER_REQUESTS);
+  await seedDemoFulfillment();
 
   // One live link and one revoked one, so the shares view has both states.
   const active = await useDataStore.getState().createShareLink({
@@ -75,6 +78,10 @@ export async function seedDemoDataroom(): Promise<Dataroom> {
   });
   await useDataStore.getState().revokeShareLink(revoked.id);
   await useDataStore.getState().registerShareView(active.token);
+
+  // Backfill reading history last, so the analytics dashboard has something to
+  // show the moment the example opens.
+  await seedDemoHistory();
 
   return room;
 }
