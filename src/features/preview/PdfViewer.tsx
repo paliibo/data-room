@@ -8,7 +8,12 @@ import type { PdfViewerProps, ViewerState } from "@/features/preview/types";
  * loaded, and it brings zoom, search and print for free — pdf.js would add
  * ~400 kB for little gain here, and this component is the seam if that changes.
  */
-export default function PdfViewer({ fileId, fileName, watermark }: PdfViewerProps) {
+export default function PdfViewer({
+  fileId,
+  fileName,
+  watermark,
+  allowDownload = true,
+}: PdfViewerProps) {
   const [state, setState] = useState<ViewerState>({ status: "loading" });
 
   useEffect(() => {
@@ -65,10 +70,16 @@ export default function PdfViewer({ fileId, fileName, watermark }: PdfViewerProp
     );
   }
 
+  // On a view-only link, hide the built-in viewer chrome so its save and print
+  // buttons are not the first thing a recipient sees. This is a UX signal, not a
+  // security control — a determined visitor can always reach the bytes, which is
+  // exactly why real data rooms watermark rather than rely on blocking.
+  const src = allowDownload ? state.url : `${state.url}#toolbar=0&navpanes=0`;
+
   return (
     <div className="relative h-full overflow-hidden rounded-lg border bg-muted">
       <iframe
-        src={state.url}
+        src={src}
         title={`Preview of ${fileName}`}
         className="size-full"
       />
