@@ -92,7 +92,6 @@ export const createTrashSlice: StateCreator<DataState, [], [], TrashSlice> = (
       await get().logActivity({
         type: "file.trash",
         targetName: `${count} item${count === 1 ? "" : "s"}`,
-        detail: "moved to trash",
       });
       return result;
     },
@@ -111,9 +110,10 @@ export const createTrashSlice: StateCreator<DataState, [], [], TrashSlice> = (
       const name = folders[0]?.name ?? files[0]?.name ?? "items";
       const total = folders.length + files.length;
       await get().logActivity({
-        type: folders.length > 0 ? "folder.restore" : "file.restore",
+        // A mixed restore is reported as a file restore so the verb reads
+        // "restored 24 items" rather than "restored folder 24 items".
+        type: total === 1 && folders.length > 0 ? "folder.restore" : "file.restore",
         targetName: total === 1 ? name : `${total} items`,
-        detail: "restored from trash",
       });
     },
 

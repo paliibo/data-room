@@ -29,8 +29,12 @@ function makeRandom(seed: number) {
  * interest ramps up toward the present, the way a live deal actually behaves.
  */
 export async function seedDemoHistory(days = 14): Promise<void> {
-  const files = Object.values(useDataStore.getState().filesById).filter((f) => !f.deletedAt);
+  const state = useDataStore.getState();
+  const files = Object.values(state.filesById).filter((f) => !f.deletedAt);
   if (files.length === 0) return;
+  const roomName = state.activeDataroomId
+    ? state.dataroomsById[state.activeDataroomId]?.name ?? "the dataroom"
+    : "the dataroom";
 
   const random = makeRandom(0x5eed);
   const drafts: ActivityDraft[] = [];
@@ -68,13 +72,7 @@ export async function seedDemoHistory(days = 14): Promise<void> {
         });
       }
       if (random() < 0.12) {
-        drafts.push({
-          type: "share.view",
-          targetName: actor,
-          actor,
-          detail: "opened the shared link",
-          at,
-        });
+        drafts.push({ type: "share.view", targetName: roomName, actor, at });
       }
     }
   }

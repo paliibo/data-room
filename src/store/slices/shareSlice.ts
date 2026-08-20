@@ -93,12 +93,13 @@ export const createShareSlice: StateCreator<DataState, [], [], ShareSlice> = (
     await ShareLinkRepository.put(updated);
     if (get().activeDataroomId === link.dataroomId) {
       set((s) => ({ sharesById: { ...s.sharesById, [link.id]: updated } }));
+      // The actor is the link label, so naming the room as the target avoids
+      // "Buy-side counsel opened Buy-side counsel".
       await get().logActivity({
         type: "share.view",
         actor: link.label,
         targetId: link.id,
-        targetName: link.label,
-        detail: "opened the shared link",
+        targetName: get().dataroomsById[link.dataroomId]?.name ?? "the dataroom",
       });
     }
   },

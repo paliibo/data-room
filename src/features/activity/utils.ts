@@ -22,7 +22,7 @@ export const ACTIVITY_VERBS: Record<ActivityType, string> = {
   "file.star": "changed the star on",
   "share.create": "created share link",
   "share.revoke": "revoked share link",
-  "share.view": "opened the shared room",
+  "share.view": "opened",
   "checklist.create": "added request",
   "checklist.status": "updated request",
 };
