@@ -1,174 +1,266 @@
-# Dataroom
+<div align="center">
 
-A virtual **Data Room** MVP — a secure, organized workspace for storing and
-browsing due-diligence documents, in the spirit of Google Drive / Dropbox /
-Box. Built as a frontend-only SPA: everything (including PDF binaries)
-persists locally in IndexedDB, so the app works end-to-end with zero backend.
+# Vault
 
-<p align="center">
-  <em>React · TypeScript · Vite · TailwindCSS · shadcn/ui · Zustand · Zod ·
-  React Hook Form · React Router · React Dropzone · Framer Motion</em>
-</p>
+**A virtual data room that runs entirely in your browser.**
+
+Organize due-diligence documents, hand out links that expire,
+and see exactly which documents got read.
+
+[![CI](https://github.com/paliibo/data-room/actions/workflows/ci.yml/badge.svg)](https://github.com/paliibo/data-room/actions/workflows/ci.yml)
+[![Deploy](https://github.com/paliibo/data-room/actions/workflows/deploy.yml/badge.svg)](https://github.com/paliibo/data-room/actions/workflows/deploy.yml)
+
+React 19 · TypeScript · Vite · Tailwind v4 · Zustand · IndexedDB · Vitest
+
+</div>
+
+---
+
+A **data room** is the private workspace a company opens up during a
+fundraise or an acquisition: one place for the financials, the contracts and
+the cap table, shared with the other side's lawyers and bankers under tight
+control. The three jobs that define one are **organize**, **control access**,
+and **prove who saw what** — and this project does all three with no backend
+at all. Documents, PDF bytes, share-link policy and the full audit history
+live in IndexedDB, so the app works end to end offline and nothing ever
+leaves the device.
+
+> **Try it:** open the app and press **Load the example deal**. It generates a
+> populated Series B diligence room — 23 documents across five sections, tags,
+> a request checklist, live and revoked share links, and two weeks of reading
+> history so the analytics dashboard has something real to show.
 
 ## Features
 
-**Datarooms** — create, rename, delete (cascade), switch between rooms.
+### Organize
 
-**Folders** — unlimited nesting, create / rename / delete (recursive),
-collapsible sidebar tree that auto-expands along the active path.
+- **Datarooms** — one workspace per deal, each with its own accent colour, description and history.
+- **Folders** — unlimited nesting, drag-and-drop onto tree nodes, breadcrumbs or cards, with a cycle guard that stops a folder being moved into itself.
+- **Documents** — drag-and-drop PDF upload anywhere on the page, inline preview, rename, per-file notes.
+- **Tags** — colour-coded labels with live counts and multi-tag filtering.
+- **Smart views** — Starred, Recent and Trash are routes, not view state, so they survive a refresh and a pasted link.
+- **Multi-select** — click, shift-click for a range, ⌘-click to toggle, ⌘A for everything in view; then star, export or trash the lot.
+- **Export** — download a single file, or a whole folder as a ZIP that keeps its structure.
 
-**Files (PDF)** — drag & drop upload anywhere on the page (or file picker),
-inline preview with metadata (size, upload date, original filename, MIME
-type), rename, download, delete.
+### Control access
 
-**Organizing** — drag & drop files *and* folders onto folders, tree nodes or
-breadcrumbs to move them; grid/list views; sort by name / date / size;
-instant search within a dataroom.
+- **Share links** scoped to the whole room or a single folder.
+- **Expiry** (7 / 30 / 90 days or never), an optional **passcode**, a **download** switch, and a **watermark** that stamps the recipient's link label across every preview.
+- **Revocable** at any time; revoked and expired links keep their history instead of vanishing.
+- A **public recipient view** at `/s/:token` with no sidebar, no mutations and no audit access — only what the policy allows.
 
-**Polish** — dark mode (system-aware, persisted, no flash on load), toasts
-for every action, confirmation dialogs for destructive actions, context
-menus, keyboard shortcuts, loading skeletons, empty states, error states,
+### Prove
+
+- **Audit log** — every action recorded with actor, target and time, grouped by day and filterable by category.
+- **Analytics** — views, downloads, uploads and unique link visitors; a 14-day stacked timeline; the most-engaged documents; per-link traffic.
+- **Due-diligence checklist** — the requests the other side made, each carrying the documents that answer it, with a completion ring over the whole list.
+
+### Craft
+
+Command palette (<kbd>⌘K</kbd>) searching the whole room · undoable delete ·
+dark mode with no flash on load · a full keyboard map · storage-quota meter ·
+loading skeletons, empty states and error states for every surface · a
 responsive layout with a mobile slide-over sidebar.
 
-### Keyboard shortcuts
+### Keyboard
 
-| Key | Action |
-| --- | ------ |
-| `N` | New folder |
-| `U` | Upload PDFs |
-| `/` | Focus search |
-| `G` | Toggle grid / list |
-| `Enter` | Open selected folder / preview selected file |
-| `F2` | Rename selected item |
-| `Delete` | Delete selected item |
-| `Esc` | Clear selection / close dialog |
+| Key | Action | | Key | Action |
+| --- | ------ |-| --- | ------ |
+| <kbd>⌘K</kbd> | Command palette | | <kbd>S</kbd> | Star / unstar |
+| <kbd>/</kbd> | Focus the filter | | <kbd>F2</kbd> | Rename |
+| <kbd>N</kbd> | New folder | | <kbd>⌫</kbd> | Move to trash |
+| <kbd>U</kbd> | Upload PDFs | | <kbd>⌘A</kbd> | Select all in view |
+| <kbd>G</kbd> | Grid / list | | <kbd>⌘⇧S</kbd> | Create share link |
+| <kbd>↵</kbd> | Open or preview | | <kbd>?</kbd> | Shortcut help |
 
 ## Getting started
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # typecheck + production build
-npm run lint     # oxlint
+npm run dev        # http://localhost:5173
 ```
+
+```bash
+npm run check      # lint + typecheck + tests, the same gate CI runs
+```
+
+| Script | What it does |
+| ------ | ------------ |
+| `npm run dev` | Vite dev server |
+| `npm run build` | Typecheck and production build |
+| `npm run test` | Vitest, single run |
+| `npm run test:watch` | Vitest in watch mode |
+| `npm run test:coverage` | Coverage summary for `lib`, `store`, `hooks`, `storage` |
+| `npm run lint` | oxlint |
+| `npm run check` | All of the above, in CI order |
 
 Requires Node 20+.
 
 ## Architecture
 
-The code is layered so that UI, state and persistence can each change
-independently:
+Five layers, each replaceable without touching the ones above it:
 
 ```
-pages / features / components   (rendering)
-  └── hooks                     (business logic)
-        └── store (Zustand)     (state + actions)
-              └── repositories  (CRUD API)
-                    └── indexedDb (storage)
+pages / features / components     rendering
+  └── hooks                       view logic and side effects
+        └── store (Zustand)       normalized state + actions
+              └── repositories    the CRUD API
+                    └── indexedDb storage
 ```
 
-- **Repositories** (`src/storage/repositories/`) are the only code that
-  touches IndexedDB. Swapping IndexedDB for an HTTP API means reimplementing
-  three small files — no store or component changes.
-- **The data store** (`src/store/dataStore.ts`) is a normalized client-side
-  database: flat `byId` maps plus a `childrenByParent` index, exactly as you
-  would shape a server cache. No recursive nested state.
-- **Hooks** (`src/hooks/`) adapt store state to view needs (`useFolderTree`
-  flattens the visible tree rows, `useBreadcrumbs` walks parent pointers,
-  `useFolderContents` applies search + sort) and own side-effect flows
-  (`useUpload`).
-- **Components** are presentational; the route component (`DataroomPage`)
-  wires navigation, dialogs and actions together and passes callbacks down.
+**Repositories** (`src/storage/repositories/`) are the only code that touches
+IndexedDB. Swapping local storage for an HTTP API means reimplementing six
+small files — no store or component changes.
+
+**The data store** (`src/store/`) is a normalized client-side database: flat
+`byId` maps plus a `childrenByParent` index, shaped exactly like a server
+cache. It is assembled from six slices — tree, trash, tags, sharing, audit,
+checklist — so each domain reads on its own while sharing one `get()`/`set()`.
+
+**Hooks** (`src/hooks/`) adapt store state to view needs. `useFolderContents`
+serves all four browse scopes from one predicate, `useFolderTree` flattens
+visible tree rows, `useAnalytics` aggregates the audit log.
+
+**Selection lives in its own store.** It changes on every click, and keeping
+it out of the persisted UI store stops a shift-click sweep from re-serializing
+localStorage on each step.
 
 ### Data model
 
 ```ts
-Dataroom { id, name, createdAt, updatedAt }
-Folder   { id, dataroomId, parentId, name, createdAt, updatedAt }
-FileItem { id, dataroomId, parentId, name, originalFilename,
-           size, mimeType, uploadedAt, updatedAt }        // metadata only
+Dataroom     { id, name, description, accent, createdAt, updatedAt }
+Folder       { id, dataroomId, parentId, name, starred, deletedAt, … }
+FileItem     { id, dataroomId, parentId, name, size, mimeType,
+               starred, deletedAt, tagIds, note, uploadedAt, … }   // metadata only
+Tag          { id, dataroomId, name, color }
+ShareLink    { id, dataroomId, token, folderId, expiresAt, passcode,
+               allowDownload, watermark, revokedAt, viewCount, … }
+ActivityEvent{ id, dataroomId, type, actor, targetId, targetName, detail, at }
+ChecklistItem{ id, dataroomId, title, category, status, fileIds, … }
 ```
 
-`parentId: null` means "directly in the dataroom root". File **binary
-content lives in a separate `blobs` object store**, keyed by file id, so
-listing a folder never deserializes megabytes of PDF bytes.
+`parentId: null` means "directly in the dataroom root". File **bytes live in a
+separate `blobs` store** keyed by file id, so listing a folder never
+deserializes megabytes of PDF.
 
 ### Why these choices
 
 | Decision | Rationale |
 | -------- | --------- |
-| **Normalized state** (`byId` + children index) instead of a nested tree | Renaming a deeply nested folder is one O(1) map write; the folder tree renders from cheap lookups; no recursive immutable updates. Scales to thousands of entries. |
-| **Only the active dataroom is hydrated** | A dataroom is the unit of interest. Memory stays proportional to what is on screen; switching rooms re-hydrates from IndexedDB. |
-| **IndexedDB over localStorage** | Blob support (PDFs up to 200 MB), async API, indexes (`by-dataroom`) for O(subset) hydration and deletion, transactions for atomic cascade deletes. |
-| **Cascade deletes inside one transaction** | A crash mid-delete can never leave orphaned folders/files/blobs. |
-| **Zustand (two stores)** | `dataStore` = domain data; `uiStore` = view prefs (view mode, sort, tree expansion — persisted to localStorage, harmless to lose). Clean separation of concerns without Redux ceremony. |
-| **Validation in the store, not the form** | Name conflicts are business rules; dialogs just surface `NameConflictError` as a field error. The same rule guards uploads, renames and drag-moves. |
-| **Native browser PDF viewer (iframe + blob URL)** | Zero-dependency, lazy-loaded route chunk, familiar UX (zoom/print/save built in). `pdf.js` would add ~400 kB for little MVP gain — an easy later swap since the viewer is one component. |
-| **Duplicate names: block vs. auto-suffix** | Explicit create/rename **blocks** with an inline error (user intent is clear). Uploads **auto-suffix** `report (2).pdf` like Drive/Finder (failing a 10-file drop over one collision is hostile). Comparison is case-insensitive. |
-| **Flat rendering of the folder tree** | `useFolderTree` flattens visible rows (collapsed branches skipped), so rows are memoized siblings rather than a recursive component pyramid — and the list is trivially virtualizable if trees grow huge. |
+| **Normalized state** (`byId` + children index) instead of a nested tree | Renaming a deeply nested folder is one O(1) map write; the tree renders from cheap lookups. No recursive immutable updates. |
+| **Store split into slices** | Six domains share one `get()`/`set()` without one 900-line file. Trash can call `logActivity` directly instead of routing through a bus. |
+| **Soft delete, not hard delete** | Trashing stamps `deletedAt` across the subtree and leaves rows in place, so restore is a field flip and undo costs nothing. Purging is the only thing that drops rows and blobs. |
+| **Trash lists only subtree roots** | Deleting one folder with 40 files should be one entry to restore, not 41. |
+| **Only the active dataroom is hydrated** | A room is the unit of interest. Memory stays proportional to what is on screen; switching re-hydrates from IndexedDB, and stale responses from a fast switch are discarded. |
+| **IndexedDB over localStorage** | Blob support (PDFs to 200 MB), async API, `by-dataroom` indexes for O(subset) reads, and transactions for atomic cascade deletes. |
+| **Schema upgrades are additive; rows normalize on read** | A v1 database keeps every row and only gains new stores. Defaulting the new fields at the repository boundary means a large existing room never pays a rewrite before it can open. |
+| **Share policy is one pure function** | `evaluateShare` is the single place that decides granted / passcode-required / denied, so the public route and the owner's link list agree by construction — and the rules are directly testable. |
+| **Every mutation logs to one audit trail** | Analytics aggregates the log rather than keeping a second set of counters, so the dashboard cannot drift from what actually happened. |
+| **Routes are scope-first** | `/starred`, `/recent`, `/trash` and `/analytics` are addresses, not component state — so every view survives a refresh, a back press and a pasted link. |
+| **Native PDF viewer (iframe + blob URL)** | Zero dependencies, lazily loaded, and it brings zoom, search and print for free. `pdf.js` would add ~400 kB for little gain, and the viewer is one component if that changes. |
+| **Duplicate names: block vs. auto-suffix** | An explicit create or rename **blocks** with an inline error — the intent is unambiguous. An upload **auto-suffixes** `report (2).pdf`, because failing a ten-file drop over one collision is hostile. |
+| **Chart colours validated, not eyeballed** | The three series were checked for colour-vision separation against each theme's own surface — light clears a worst-pair ΔE of 10.1, dark 8.2 — rather than dark mode being an automatic flip of light. |
 
 ### Edge cases handled
 
-- Duplicate folder/file/dataroom names (case-insensitive; block or auto-suffix as above)
-- Invalid names (empty, `/ \ : * ? " < > |`, control chars, trailing dots, >255 chars) via Zod
-- Non-PDF uploads and empty files → per-file rejection toasts; oversized files (>200 MB) rejected
-- Recursive deletion of deep trees, atomically, including blobs
-- Deleting the folder you are standing in (or an ancestor) → navigates to the deleted folder's parent first
-- URL pointing at a deleted/unknown folder or dataroom → graceful fallback + toast
-- Moving a folder into its own subtree → blocked (cycle guard); move collisions auto-renamed
-- Corrupted / unavailable IndexedDB (private mode, disk full) → error state with retry and "reset local data"
-- State survives refresh; stale hydration responses are ignored when switching rooms quickly
-- Breadcrumb/ancestor walks guard against corrupt parent cycles
+- Duplicate names (case-insensitive) — blocked on create/rename, auto-suffixed on upload; a trashed item stops reserving its name
+- Invalid names (empty, `/ \ : * ? " < > |`, control chars, trailing dots, > 255 chars) via Zod
+- Non-PDF, empty and oversized (> 200 MB) uploads rejected per file, so the rest of a batch still lands
+- Recursive delete and restore of deep trees, atomically, including blobs
+- Deleting the folder you are standing in, or one of its ancestors → navigates to the deleted folder's parent first
+- A URL pointing at a deleted or unknown folder, dataroom or share token → graceful fallback
+- Moving a folder into its own subtree → blocked; move collisions auto-renamed
+- Corrupt parent cycles → breadcrumbs, ancestor walks and subtree collection all terminate instead of hanging
+- Corrupted or unavailable IndexedDB (private mode, disk full) → error state with retry and "reset local data"
+- Fast room switching → stale hydration responses are discarded
+- Expired, revoked and passcode-protected links → each with its own recipient-facing explanation
+- Backdated audit events → the feed re-sorts rather than assuming every batch is newest
+
+## Testing
+
+123 tests over the layers where correctness is not visual:
+
+```bash
+npm run test
+```
+
+- **`src/lib`** — share-link policy, name validation and uniqueness, analytics aggregation
+- **`src/store`** — tree helpers and cycle guards, plus an end-to-end suite driving the real store against a fake IndexedDB, so cascade deletes, transactions and blob cleanup are genuinely exercised rather than mocked
+- **`src/features`** — palette search ranking, activity filtering and grouping, and a rendered feed
 
 ## Project structure
 
 ```
 src/
   components/
-    ui/          # shadcn/ui primitives (button, dialog, menus, …)
-    shared/      # EmptyState, NameDialog, DeleteConfirmDialog, ErrorBoundary
+    ui/          shadcn/ui primitives (button, dialog, command, …)
+    shared/      PageHeader, StatCard, SectionCard, TagChip, Kbd, EmptyState
+    charts/      ActivityTimeline, Sparkline, RankedBars, ProgressRing
   features/
-    browser/     # Sidebar, FolderTree, FolderNode, Breadcrumbs, Toolbar,
-                 # ContentView, ItemCard, ItemRow, ItemContextMenu, UploadDropzone
-    preview/     # PdfPreviewDialog + lazy PdfViewer
-  hooks/         # useDatarooms, useFolderContents, useFolderTree,
-                 # useBreadcrumbs, useUpload, useKeyboardShortcuts, useTheme
-  store/         # dataStore (domain), uiStore (view prefs)
-  storage/       # indexedDb.ts + repositories/
-  lib/           # validation (Zod), dnd, format, download, utils
-  pages/         # DataroomListPage, DataroomPage (route orchestrators)
-  types/         # domain models
+    browser/     Sidebar, FolderTree, Toolbar, ContentView, cards, rows, bulk bar
+    command/     ⌘K palette and its dataroom-wide search
+    share/       link creation dialog, policy badges, copy field
+    activity/    audit feed, verbs, day grouping
+    checklist/   request rows, document attachment
+    tags/        tag editor
+    preview/     PdfPreviewDialog + lazy PdfViewer
+    demo/        example dataset, PDF generator, seeded history
+  hooks/         scoped contents, analytics, tags, shares, checklist, shortcuts
+  store/         dataStore (six slices), uiStore, selection store
+  storage/       indexedDb.ts, normalize.ts, repositories/
+  lib/           validation, share policy, analytics, download, dnd, format
+  pages/         landing, dataroom layout, routed views, public share, 404
+  test/          setup and factories
 ```
 
 Each feature folder follows one convention: component files contain only
-components; their prop interfaces and local types live in a sibling
-`types.ts`, and non-React helpers in a sibling `utils.ts` (e.g.
-`features/browser/types.ts` + `features/browser/utils.ts`, and the same
-pattern in `components/shared`, `features/preview`, `pages`, `hooks` and
-`store`). `components/ui` is intentionally exempt — those files are vendored
-shadcn/ui primitives kept in their upstream single-file form so they can be
-diffed/updated against the generator.
+components, their prop types live in a sibling `types.ts`, and non-React
+helpers in a sibling `utils.ts`. `components/ui` is exempt — those are
+vendored shadcn/ui primitives kept in upstream single-file form so they can be
+diffed against the generator.
 
 ## Accessibility
 
-Radix primitives give dialogs/menus focus trapping, escape handling and
-ARIA roles for free; on top of that: `role="tree"/"treeitem"` with
-`aria-expanded`/`aria-selected` in the sidebar, labeled icon buttons,
-`aria-current` breadcrumbs, keyboard-operable cards (Tab + Enter), visible
-focus rings, and form errors announced via `role="alert"`.
+Radix primitives supply focus trapping, escape handling and ARIA roles for
+dialogs and menus. On top of that: `role="tree"`/`treeitem` with
+`aria-expanded` and `aria-selected` in the sidebar, `aria-current`
+breadcrumbs, labeled icon buttons, keyboard-operable cards, a visible focus
+ring on every interactive element, form errors announced through
+`role="alert"`, charts that carry a text summary and a live hover readout
+rather than relying on colour, and a `prefers-reduced-motion` escape hatch.
 
-## Tradeoffs & future improvements
+## Deployment
 
-- **No backend** (per brief). Next step: swap repositories for an API client
-  + blob storage (S3 presigned uploads), keeping stores/components intact.
-- **Single selection** only; multi-select with shift/cmd and bulk actions
-  would follow the same `ItemActions` interface.
-- **Search is name-based** within the open dataroom; full-text PDF search
-  would need a worker + pdf.js text extraction.
-- **No virtualization yet** — content renders comfortably into the hundreds
-  of items; `useFolderTree`'s flat output makes adding `react-virtual`
-  straightforward when needed.
-- **No auth/sharing** — a real dataroom needs permissions, watermarking and
-  audit logs; out of scope for a local-only MVP.
-- Undo (trash bin) instead of hard delete; favorites & recents; file
-  thumbnails via pdf.js page-1 rasterization.
+Pushing to `main` builds and publishes to GitHub Pages. The base path is
+injected at build time and read back by the router, and the built shell is
+copied to `404.html` so a static host hands deep links back to the SPA instead
+of returning a real 404.
+
+## Limitations
+
+Being backend-free is the point, and it has honest consequences:
+
+- **Share links only open on the device that created them.** The policy engine
+  is real, but the data lives in that browser's IndexedDB. A hosted deployment
+  would move `evaluateShare` server-side unchanged.
+- **View-only is a UX signal, not DRM.** The viewer chrome is hidden and
+  previews are watermarked; anyone determined can still reach the bytes. That
+  is exactly why real data rooms watermark rather than rely on blocking.
+- **No auth, no roles, no server-side audit.** Single-user by construction.
+- **Search matches names, not PDF contents.** Full-text would need pdf.js text
+  extraction in a worker.
+- **No list virtualization yet.** Content renders comfortably into the
+  hundreds; `useFolderTree`'s flat output makes adding it straightforward.
+
+## Next steps
+
+Swap the repositories for an API client with S3 presigned uploads (stores and
+components stay as they are) · per-recipient share analytics with page-level
+dwell time · full-text PDF search · row virtualization · a real permissions
+model with roles and per-folder grants.
+
+---
+
+<div align="center">
+Built by <a href="https://github.com/paliibo">paliibo</a>
+</div>
