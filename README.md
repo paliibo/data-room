@@ -10,6 +10,8 @@ and see exactly which documents got read.
 [![CI](https://github.com/paliibo/data-room/actions/workflows/ci.yml/badge.svg)](https://github.com/paliibo/data-room/actions/workflows/ci.yml)
 [![Deploy](https://github.com/paliibo/data-room/actions/workflows/deploy.yml/badge.svg)](https://github.com/paliibo/data-room/actions/workflows/deploy.yml)
 
+**[→ Open the live demo](https://paliibo.github.io/data-room/)**
+
 React 19 · TypeScript · Vite · Tailwind v4 · Zustand · IndexedDB · Vitest
 
 </div>
@@ -25,7 +27,8 @@ at all. Documents, PDF bytes, share-link policy and the full audit history
 live in IndexedDB, so the app works end to end offline and nothing ever
 leaves the device.
 
-> **Try it:** open the app and press **Load the example deal**. It generates a
+> **Try it:** open the [live demo](https://paliibo.github.io/data-room/) and
+> press **Load the example deal**. It generates a
 > populated Series B diligence room — 23 documents across five sections, tags,
 > a request checklist, live and revoked share links, and two weeks of reading
 > history so the analytics dashboard has something real to show.
